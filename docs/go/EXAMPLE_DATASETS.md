@@ -9,7 +9,7 @@ Tracked GitHub-ready examples live in:
 ## Use An Example
 
 ```bash
-cd /home/traves/Development/6.GroupProjects/microgpt/go
+cd go
 cp datasets/examples/assistant_dataset_example_personal_agent.jsonl datasets/generated/example_personal_agent.jsonl
 go run . validate-dataset datasets/generated/example_personal_agent.jsonl
 ```
