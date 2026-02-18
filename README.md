@@ -1,6 +1,9 @@
 # MicroGPT - Go Edition
 
+![MicroGPT TUI Screenshot](public/tui.webp)
+
 MicroGPT is a Go-first local training project with a unified terminal UI for:
+
 - configuring training
 - running/monitoring jobs
 - reviewing run artifacts
@@ -12,7 +15,8 @@ This is the top-level project guide. The runnable app lives in `go/`.
 
 This project builds on ideas popularized by Andrej Karpathy.  
 Original reference gist:
-- https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95
+
+- <https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95>
 
 Karpathy is credited here as the original creator/inspiration for the foundational approach.
 
@@ -49,6 +53,7 @@ go run ./cmd/mircogpt-tui
 - `q`: quit
 
 Train:
+
 - `j/k`: select field
 - `e` or `enter`: edit field
 - `space`: cycle bool/choice field
@@ -57,6 +62,7 @@ Train:
 - `pgup/pgdown/home/end`: scroll
 
 Monitor:
+
 - `left/right`: metric category
 - `up/down`: metric selection
 - `enter`: focused graph mode
@@ -64,10 +70,12 @@ Monitor:
 - `pgup/pgdown/home/end`: scroll
 
 Logs:
+
 - `pgup/pgdown/home/end`: scroll
 - `c`: clear logs
 
 Chat:
+
 - `enter`: start typing/send
 - `esc`: exit typing
 - `p`: edit checkpoint path
@@ -104,6 +112,7 @@ go run . chat-once models/latest_checkpoint.json "Help me prioritize my day"
 ## Dataset
 
 Default dataset path:
+
 - `go/datasets/raw/databricks-dolly-15k.jsonl`
 
 The runtime supports schema-based JSONL and compatibility mapping for Dolly-style rows.
@@ -111,6 +120,7 @@ The runtime supports schema-based JSONL and compatibility mapping for Dolly-styl
 ## Training Artifacts
 
 Logs:
+
 - `go/logs/train/tui_train_<run-tag>.log`
 - `go/logs/system/tui_system_metrics_<run-tag>.csv`
 - `go/logs/eval/tui_eval_metrics_<run-tag>.csv`
@@ -118,6 +128,7 @@ Logs:
 - `go/logs/train_latest.log`
 
 Models:
+
 - `go/models/ckpt_<run-tag>_step<steps>_valloss<loss>.json`
 - `go/models/latest_checkpoint.json`
 - `go/models/best_checkpoint.json`
