@@ -286,6 +286,7 @@ func (k keyMap) FullHelp() [][]key.Binding {
 
 var stepRE = regexp.MustCompile(`\[step\]\s+(\d+)/(\d+)\s+loss=([^\s]+)\s+lr=([^\s]+)\s+seq_len=(\d+)\s+doc_chars=(\d+)\s+steps_per_sec=([^\s]+)\s+elapsed=([^\s]+)\s+eta=([^\s]+)\s+heap_alloc_mb=([^\s]+)\s+runtime_sys_mb=([^\s]+)\s+sys_ram_used_pct=([^\s]+)\s+sys_ram_avail_mb=([^\s]+)\s+gc=(\d+)\s+goroutines=(\d+)`)
 var evalRE = regexp.MustCompile(`\[eval\]\s+step=(\d+)\s+train_loss=([^\s]+)\s+val_loss=([^\s]+)\s+best_val=([^\s]+)\s+improved=(true|false)\s+patience=(\d+)/(\d+)`)
+var ansiEscapeRE = regexp.MustCompile(`\x1b\[[0-?]*[ -/]*[@-~]`)
 
 type sysTickMsg struct {
 	stats sysStats
@@ -710,6 +711,10 @@ func (m *model) envMap() map[string]string {
 }
 
 func (m *model) appendLog(line string) {
+	line = sanitizeLogLine(line)
+	if line == "" {
+		return
+	}
 	m.logs = append(m.logs, line)
 	if len(m.logs) > 3500 {
 		m.logs = m.logs[len(m.logs)-3500:]
@@ -722,6 +727,22 @@ func (m *model) appendLog(line string) {
 	if m.latestFile != nil {
 		_, _ = m.latestFile.WriteString(line + "\n")
 	}
+}
+
+func sanitizeLogLine(s string) string {
+	s = ansiEscapeRE.ReplaceAllString(s, "")
+	s = strings.ReplaceAll(s, "\r", " ")
+	s = strings.ReplaceAll(s, "\t", "    ")
+	s = strings.Map(func(r rune) rune {
+		if r == '\n' {
+			return ' '
+		}
+		if r < 32 || r == 127 {
+			return -1
+		}
+		return r
+	}, s)
+	return strings.TrimSpace(s)
 }
 
 func (m *model) appendSystemCSV(ts time.Time, stats sysStats) {
@@ -1594,7 +1615,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case lineMsg:
-		line := string(msg)
+		line := sanitizeLogLine(string(msg))
 		if line == "" {
 			break
 		}
@@ -2314,7 +2335,6 @@ func (m model) viewLogsTab(w, h int) string {
 		wrapped = append(wrapped, wrapText(ln, innerW)...)
 	}
 	lv.SetContent(strings.Join(wrapped, "\n"))
-	lv.GotoBottom()
 
 	body := m.styles.panel.Width(panelInnerWidth(w)).Render(m.styles.panelTitle.Render("Live Logs") + "\n" + lv.View())
 	return fitHeight(body, h)

@@ -12,6 +12,8 @@ All notable changes to `microgpt-go` are documented here.
 - Logs tab rendering fixes:
   - wrapped long log lines to viewport width before rendering.
   - prevented log overflow from pushing header/tabs out of view.
+  - sanitized ANSI/control characters from streamed logs so terminal escape sequences no longer overwrite the tab/header rows.
+  - stopped forcing log viewport auto-jump on every render; scrolling remains stable while tabs stay visible.
 - Train tab responsiveness improvements:
   - better large-screen layout usage.
   - better small-screen stacked layout and scrolling behavior.
