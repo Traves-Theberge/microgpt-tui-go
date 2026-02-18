@@ -1,0 +1,8 @@
+# Go Docs Index
+
+- `INSTALLATION.md`
+- `USAGE.md`
+- `TRAINING_HUB_GUIDE.md`
+- `DATASET_GUIDE.md`
+- `EXAMPLE_DATASETS.md`
+- `TRAINING_PLAN.md`

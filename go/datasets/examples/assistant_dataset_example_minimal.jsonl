@@ -1,0 +1,6 @@
+{"id":"k1","record_type":"knowledge","text":"Traves prefers concise action-first summaries."}
+{"id":"m1","record_type":"memory","text":"The assistant should ask clarifying questions when requirements are ambiguous."}
+{"id":"q1","record_type":"qa","question":"How should I start my day?","answer":"Review top priorities, then complete one high-impact task before meetings."}
+{"id":"c1","record_type":"chat","input":"Give me a quick daily plan template.","output":"Morning: top 3 priorities. Midday: progress check. End of day: recap and next steps."}
+{"id":"t1","record_type":"trajectory","task":"Prepare a project update","actions":["Collect status","Summarize blockers","List next actions"],"result":"Stakeholder-ready update drafted with clear action items."}
+{"id":"p1","record_type":"preference","prompt":"Write an update message","chosen":"Status: on track. Risk: API latency. Next: optimize caching by Friday.","rejected":"Everything is okay I think and maybe we will see."}

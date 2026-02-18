@@ -1,0 +1,6 @@
+U: I am behind on my weekly goals.
+A: Let's reset your priorities to one high-impact path.
+U: I have two hours now, what should I do first?
+A: Start with the deliverable that unblocks the most downstream work.
+U: How do I communicate this delay quickly?
+A: Send a concise update: current status, risk, revised ETA, and next checkpoint.

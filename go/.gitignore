@@ -1,0 +1,16 @@
+# Built binaries
+/microgpt-go
+/train-tui
+/chat-tui
+
+# Runtime artifacts
+/logs/
+/models/*.json
+!/models/.gitkeep
+
+# Local/large datasets (keep examples tracked)
+/assistant_dataset_*.jsonl
+/archive/*.jsonl
+/datasets/generated/
+!/datasets/examples/
+!/datasets/examples/*.jsonl

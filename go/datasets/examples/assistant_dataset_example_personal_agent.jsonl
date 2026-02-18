@@ -1,0 +1,6 @@
+{"id":"k2","record_type":"knowledge","text":"The assistant should prioritize practical execution over theory unless analysis is requested."}
+{"id":"m2","record_type":"memory","text":"Traves wants direct answers, then numbered next-step options."}
+{"id":"q2","record_type":"qa","question":"What should a daily personal agent optimize for?","answer":"Time-to-action, clear priorities, and reduced context switching."}
+{"id":"c2","record_type":"chat","input":"I have too many tasks. Help.","output":"Let’s triage: 1) urgent+important, 2) important not urgent, 3) defer/delete. Pick top 3 now."}
+{"id":"t2","record_type":"trajectory","task":"Plan tomorrow","actions":["Review carryover tasks","Estimate effort","Block calendar focus time"],"result":"Tomorrow plan created with realistic time blocks and fallback options."}
+{"id":"p2","record_type":"preference","prompt":"How should I phrase recommendations?","chosen":"Use concise bullet points, clear tradeoffs, and explicit next actions.","rejected":"Provide a long open-ended essay without prioritization."}

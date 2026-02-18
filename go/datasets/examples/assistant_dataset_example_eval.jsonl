@@ -1,0 +1,3 @@
+{"id":"e1","record_type":"chat","input":"Give me a one-minute planning routine.","output":"List top 3 outcomes, pick first action for each, and schedule start times."}
+{"id":"e2","record_type":"chat","input":"I’m blocked on a task.","output":"Name blocker type: info, dependency, or scope. Then choose one unblock action in 10 minutes."}
+{"id":"e3","record_type":"qa","question":"How do I keep responses concise?","answer":"Use short bullets, one decision per bullet, and a clear next step."}
