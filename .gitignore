@@ -1,1 +1,11 @@
-/Python project
+# Root ignores for microgpt
+
+go/logs/
+go/models/*.json
+!go/models/.gitkeep
+
+go/microgpt-go
+go/train-tui
+go/chat-tui
+go/logs/*.log
+go/logs/*.csv

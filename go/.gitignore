@@ -14,3 +14,5 @@
 /datasets/generated/
 !/datasets/examples/
 !/datasets/examples/*.jsonl
+/logs/*.log
+/logs/*.csv
