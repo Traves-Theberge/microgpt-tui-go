@@ -49,6 +49,30 @@ One TUI for:
 
 Default device request is `TRAIN_DEVICE=cpu`.
 
+## Parameter Cheat Sheet (Layman Terms)
+
+- `DATASET_PATH`: the file your model learns from.
+- `TOKENIZER` / `BPE_ENCODING`: how text is split into token pieces.
+- `TOKEN_VOCAB_SIZE`: token dictionary size; bigger usually means better wording, slower training.
+- `N_LAYER` / `N_EMBD` / `N_HEAD`: model size controls; bigger models can answer better but take longer.
+- `BLOCK_SIZE`: how much context each prediction can use.
+- `NUM_STEPS`: total learning time; more steps usually helps quality.
+- `LEARNING_RATE`: learning aggressiveness; high can be unstable, low can be slow.
+- `VAL_SPLIT`: percent held out for validation checks.
+- `EVAL_INTERVAL` / `EVAL_STEPS`: how often and how reliably validation is measured.
+- `EARLY_STOP_PATIENCE`: auto-stop after repeated non-improving evals.
+- `TEMPERATURE`: response creativity (lower is more coherent/consistent).
+- `TOP_K`, `TOP_P`, `REPETITION_PENALTY`: controls randomness and reduces repetition loops.
+- `MIN_NEW_TOKENS`, `REPEAT_LAST_N`: controls short replies and repeat suppression window.
+- `MODEL_OUT_PATH`: optional explicit checkpoint path; leave empty for automatic naming.
+
+## Practical Starting Profiles (This Hardware)
+
+- `coherent-fast`:
+  `TOKEN_VOCAB_SIZE=3072`, `N_LAYER=2`, `N_EMBD=80`, `BLOCK_SIZE=128`, `NUM_STEPS=1500`, `LEARNING_RATE=0.0025`, `EVAL_INTERVAL=100`, `EVAL_STEPS=64`.
+- `coherent-max`:
+  `TOKEN_VOCAB_SIZE=4096`, `N_LAYER=2`, `N_EMBD=96`, `BLOCK_SIZE=128`, `NUM_STEPS=3000`, `LEARNING_RATE=0.0025`, `EVAL_INTERVAL=100`, `EVAL_STEPS=64`.
+
 ## Training Flow
 
 ```mermaid

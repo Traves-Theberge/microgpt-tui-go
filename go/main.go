@@ -504,16 +504,22 @@ func evalLoss(gpt func(tokenID, posID int, keys, values [][][]*Value) []*Value, 
 	if maxDocs > 0 && maxDocs < steps {
 		steps = maxDocs
 	}
+	indices := rand.Perm(len(docs))
+	if steps < len(indices) {
+		indices = indices[:steps]
+	}
 	total := 0.0
 	count := 0
-	for i := 0; i < steps; i++ {
-		doc := docs[i%len(docs)]
+	for _, idx := range indices {
+		doc := docs[idx]
 		tokens := make([]int, 0, len(doc)+2)
 		tokens = append(tokens, bosID)
 		tokens = append(tokens, doc...)
 		tokens = append(tokens, bosID)
 		n := len(tokens) - 1
 		if n > blockSize {
+			start := rand.Intn(n - blockSize + 1)
+			tokens = tokens[start : start+blockSize+1]
 			n = blockSize
 		}
 		if n <= 0 {
@@ -1076,24 +1082,24 @@ func runChatOnce(checkpointPath, prompt string) error {
 	blockSize := ckpt.Config.BlockSize
 	gpt := buildGPT(state, nLayer, nEmbd, nHead)
 
-	temp := envFloat("CHAT_TEMPERATURE", 0.6)
+	temp := envFloat("CHAT_TEMPERATURE", 0.35)
 	if temp <= 0 {
-		temp = 0.6
+		temp = 0.35
 	}
 	maxNew := envInt("CHAT_MAX_NEW_TOKENS", 180)
 	if maxNew < 1 {
 		maxNew = 180
 	}
-	topK := envInt("CHAT_TOP_K", 40)
-	topP := envFloat("CHAT_TOP_P", 0.9)
+	topK := envInt("CHAT_TOP_K", 20)
+	topP := envFloat("CHAT_TOP_P", 0.92)
 	if topP <= 0 || topP > 1 {
-		topP = 0.9
+		topP = 0.92
 	}
-	repetitionPenalty := envFloat("CHAT_REPETITION_PENALTY", 1.1)
+	repetitionPenalty := envFloat("CHAT_REPETITION_PENALTY", 1.15)
 	if repetitionPenalty < 1.0 {
 		repetitionPenalty = 1.0
 	}
-	minNew := envInt("CHAT_MIN_NEW_TOKENS", 24)
+	minNew := envInt("CHAT_MIN_NEW_TOKENS", 20)
 	if minNew < 0 {
 		minNew = 0
 	}
@@ -1102,7 +1108,12 @@ func runChatOnce(checkpointPath, prompt string) error {
 		repeatLastN = 64
 	}
 
-	promptTokens := tokenizer.encodeDoc(prompt)
+	chatPrompt := strings.TrimSpace(prompt)
+	lower := strings.ToLower(chatPrompt)
+	if !strings.Contains(lower, "assistant:") {
+		chatPrompt = "User: " + chatPrompt + "\nAssistant:"
+	}
+	promptTokens := tokenizer.encodeDoc(chatPrompt)
 	if len(promptTokens) > blockSize-1 {
 		promptTokens = promptTokens[len(promptTokens)-(blockSize-1):]
 	}
@@ -1121,6 +1132,7 @@ func runChatOnce(checkpointPath, prompt string) error {
 
 	out := make([]int, 0, maxNew)
 	recent := make([]int, 0, repeatLastN)
+	stopSeqs := []string{"\nUser:", "\nPrompt:", "\nTask:", "\nContext:"}
 	for pos < blockSize && len(out) < maxNew {
 		logits := gpt(tokenID, pos, keys, values)
 		recentSet := map[int]bool{}
@@ -1140,9 +1152,21 @@ func runChatOnce(checkpointPath, prompt string) error {
 		if len(recent) > repeatLastN {
 			recent = recent[len(recent)-repeatLastN:]
 		}
+		if len(out) >= minNew {
+			partial := tokenizer.decodeTokens(out)
+			for _, stop := range stopSeqs {
+				if i := strings.Index(partial, stop); i >= 0 {
+					partial = partial[:i]
+					fmt.Print(strings.TrimSpace(strings.TrimPrefix(partial, "Assistant:")))
+					return nil
+				}
+			}
+		}
 		pos++
 	}
-	fmt.Print(tokenizer.decodeTokens(out))
+	decoded := strings.TrimSpace(tokenizer.decodeTokens(out))
+	decoded = strings.TrimSpace(strings.TrimPrefix(decoded, "Assistant:"))
+	fmt.Print(decoded)
 	return nil
 }
 
@@ -1324,6 +1348,14 @@ func main() {
 		panic("invalid NUM_STEPS: must be >=1")
 	}
 	fmt.Printf("optimizer: lr=%.5f beta1=%.3f beta2=%.3f eps=%.1e steps=%d\n", learningRate, beta1, beta2, epsAdam, numSteps)
+	trainDocSampling := strings.ToLower(normalize(os.Getenv("TRAIN_DOC_SAMPLING")))
+	if trainDocSampling == "" {
+		trainDocSampling = "random"
+	}
+	if trainDocSampling != "random" && trainDocSampling != "sequential" {
+		trainDocSampling = "random"
+	}
+	fmt.Printf("sampling: train_docs=%s eval_docs=random eval_windows=random\n", trainDocSampling)
 	evalInterval := envInt("EVAL_INTERVAL", 50)
 	if evalInterval < 1 {
 		evalInterval = 100
@@ -1348,8 +1380,12 @@ func main() {
 	noImproveCount := 0
 	actualSteps := 0
 	for step := 0; step < numSteps; step++ {
-		doc := trainDocsText[step%len(trainDocsText)]
-		docTok := trainDocsTokens[step%len(trainDocsTokens)]
+		docIdx := step % len(trainDocsTokens)
+		if trainDocSampling == "random" {
+			docIdx = rand.Intn(len(trainDocsTokens))
+		}
+		doc := trainDocsText[docIdx]
+		docTok := trainDocsTokens[docIdx]
 		tokens := make([]int, 0, len(docTok)+2)
 		tokens = append(tokens, BOS)
 		tokens = append(tokens, docTok...)
@@ -1357,6 +1393,8 @@ func main() {
 
 		n := len(tokens) - 1
 		if n > blockSize {
+			start := rand.Intn(n - blockSize + 1)
+			tokens = tokens[start : start+blockSize+1]
 			n = blockSize
 		}
 

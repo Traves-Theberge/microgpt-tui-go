@@ -9,7 +9,7 @@
 ## Setup
 
 ```bash
-cd /home/traves/Development/6.GroupProjects/microgpt/go
+cd go
 go mod tidy
 ./checks.sh
 ```
@@ -19,6 +19,10 @@ go mod tidy
 ```bash
 go run ./cmd/mircogpt-tui
 ```
+
+In the TUI `Train` tab, use:
+- `2` for `coherent-fast` (recommended first real run on CPU)
+- `3` for `coherent-max` (long run, best quality target)
 
 ## Included Dataset
 

@@ -29,7 +29,7 @@ Karpathy is credited here as the original creator/inspiration for the foundation
 ## Quick Start
 
 ```bash
-cd /home/traves/Development/6.GroupProjects/microgpt/go
+cd go
 go mod tidy
 ./checks.sh
 go run ./cmd/mircogpt-tui
@@ -133,21 +133,32 @@ Models:
 - `go/models/latest_checkpoint.json`
 - `go/models/best_checkpoint.json`
 
-## Recommended Baseline (Laptop-safe)
+## Recommended Baseline (Coherence-first on CPU)
 
-- `TOKENIZER=bpe`
-- `BPE_ENCODING=cl100k_base`
-- `TOKEN_VOCAB_SIZE=2048`
-- `N_LAYER=1`, `N_EMBD=48`, `N_HEAD=4`, `BLOCK_SIZE=96`
-- `NUM_STEPS=800`, `LEARNING_RATE=0.004`
-- `VAL_SPLIT=0.10`, `EVAL_INTERVAL=50`
+- `TOKENIZER=bpe`, `BPE_ENCODING=cl100k_base`
+- `TOKEN_VOCAB_SIZE=3072`
+- `N_LAYER=2`, `N_EMBD=80`, `N_HEAD=4`, `BLOCK_SIZE=128`
+- `NUM_STEPS=1500`, `LEARNING_RATE=0.0025`
+- `VAL_SPLIT=0.10`, `EVAL_INTERVAL=100`, `EVAL_STEPS=64`
+- `EARLY_STOP_PATIENCE=12`
 - `TRAIN_DEVICE=cpu`
+
+Use `TOKEN_VOCAB_SIZE=4096`, `N_EMBD=96`, `NUM_STEPS=3000` for longer runs when you want the best quality this machine can reasonably produce.
+
+## Parameter Cheat Sheet (Plain English)
+
+- `TOKEN_VOCAB_SIZE`: vocabulary detail level; higher usually improves wording but takes longer.
+- `N_LAYER` / `N_EMBD`: model depth/width; higher improves capacity and coherence but slows training.
+- `BLOCK_SIZE`: how much context the model can see at once.
+- `NUM_STEPS`: training duration; more steps usually improve responses.
+- `LEARNING_RATE`: how aggressive training updates are; too high is noisy, too low is slow.
+- `EVAL_STEPS`: validation reliability; low values are noisy, higher values are more trustworthy.
+- `TEMPERATURE`: creativity vs stability at generation time (lower is more coherent).
+- `TOP_K` / `TOP_P` / `REPETITION_PENALTY`: controls randomness and repetition in responses.
 
 ## Documentation Map
 
-- `docs/go/README.md`
 - `docs/go/INSTALLATION.md`
-- `docs/go/USAGE.md`
 - `docs/go/TRAINING_HUB_GUIDE.md`
 - `docs/go/DATASET_GUIDE.md`
 - `docs/go/EXAMPLE_DATASETS.md`

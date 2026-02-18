@@ -154,6 +154,10 @@ type model struct {
 	latestFile   *os.File
 	metricsFile  *os.File
 	evalFile     *os.File
+	chatLogPath  string
+	chatLatest   string
+	chatLogFile  *os.File
+	chatLastFile *os.File
 	lineCh       chan string
 	doneCh       chan error
 
@@ -329,45 +333,45 @@ func defaultStyles() styles {
 
 func defaultFields(root string) []cfgField {
 	return []cfgField{
-		{Key: "DATASET_PATH", Label: "Dataset Path", Type: fieldString, Value: "datasets/raw/databricks-dolly-15k.jsonl", Desc: "JSONL training dataset path"},
-		{Key: "TOKENIZER", Label: "Tokenizer", Type: fieldChoice, Value: "bpe", Desc: "bpe (default) or char fallback", Choices: []string{"bpe", "char"}},
-		{Key: "BPE_ENCODING", Label: "BPE Encoding", Type: fieldString, Value: "cl100k_base", Desc: "BPE encoding family"},
-		{Key: "TOKEN_VOCAB_SIZE", Label: "Local Token Vocab", Type: fieldInt, Value: "2048", Desc: "Top BPE tokens to keep (+UNK,+BOS)"},
-		{Key: "N_LAYER", Label: "Layers", Type: fieldInt, Value: "1", Desc: "Transformer layer count"},
-		{Key: "N_EMBD", Label: "Embedding Size", Type: fieldInt, Value: "48", Desc: "Embedding width"},
-		{Key: "N_HEAD", Label: "Attention Heads", Type: fieldInt, Value: "4", Desc: "Head count"},
-		{Key: "BLOCK_SIZE", Label: "Block Size", Type: fieldInt, Value: "96", Desc: "Max sequence length"},
-		{Key: "NUM_STEPS", Label: "Training Steps", Type: fieldInt, Value: "800", Desc: "Optimizer steps"},
-		{Key: "LEARNING_RATE", Label: "Learning Rate", Type: fieldFloat, Value: "0.004", Desc: "Initial learning rate"},
-		{Key: "BETA1", Label: "Adam Beta1", Type: fieldFloat, Value: "0.85", Desc: "Adam momentum term"},
-		{Key: "BETA2", Label: "Adam Beta2", Type: fieldFloat, Value: "0.99", Desc: "Adam variance term"},
-		{Key: "EPS_ADAM", Label: "Adam Epsilon", Type: fieldFloat, Value: "1e-8", Desc: "Adam stability epsilon"},
-		{Key: "VAL_SPLIT", Label: "Validation Split", Type: fieldFloat, Value: "0.10", Desc: "Fraction of docs reserved for validation"},
-		{Key: "EVAL_INTERVAL", Label: "Eval Interval", Type: fieldInt, Value: "50", Desc: "Run validation every N steps"},
-		{Key: "EVAL_STEPS", Label: "Eval Docs", Type: fieldInt, Value: "16", Desc: "Docs used per validation pass"},
-		{Key: "EARLY_STOP_PATIENCE", Label: "Early Stop Patience", Type: fieldInt, Value: "8", Desc: "Validation intervals without improvement before stop"},
-		{Key: "EARLY_STOP_MIN_DELTA", Label: "Early Stop Min Delta", Type: fieldFloat, Value: "0.0005", Desc: "Minimum val-loss improvement to reset patience"},
-		{Key: "TEMPERATURE", Label: "Sample Temperature", Type: fieldFloat, Value: "0.60", Desc: "Generation randomness"},
-		{Key: "SAMPLE_COUNT", Label: "Sample Count", Type: fieldInt, Value: "8", Desc: "Number of output samples"},
-		{Key: "SAMPLE_MAX_NEW_TOKENS", Label: "Sample Max New Tokens", Type: fieldInt, Value: "160", Desc: "Max generated tokens per sample"},
-		{Key: "TOP_K", Label: "Top-K", Type: fieldInt, Value: "40", Desc: "Limit next-token candidates to top K"},
-		{Key: "TOP_P", Label: "Top-P", Type: fieldFloat, Value: "0.90", Desc: "Nucleus sampling cumulative probability"},
-		{Key: "REPETITION_PENALTY", Label: "Repetition Penalty", Type: fieldFloat, Value: "1.10", Desc: "Penalize recently seen tokens"},
-		{Key: "MIN_NEW_TOKENS", Label: "Min New Tokens", Type: fieldInt, Value: "24", Desc: "Try to avoid immediate EOS"},
-		{Key: "REPEAT_LAST_N", Label: "Repeat Window", Type: fieldInt, Value: "64", Desc: "Recent token window for repetition penalty"},
-		{Key: "TRAIN_DEVICE", Label: "Train Device", Type: fieldChoice, Value: "cpu", Desc: "Requested compute device", Choices: []string{"cpu", "gpu"}},
-		{Key: "METRIC_INTERVAL", Label: "Metric Interval", Type: fieldInt, Value: "1", Desc: "Verbose metric log cadence"},
-		{Key: "LOG_LEVEL", Label: "Log Level", Type: fieldChoice, Value: "debug", Desc: "info or debug", Choices: []string{"info", "debug"}},
-		{Key: "VERBOSE", Label: "Verbose Metrics", Type: fieldBool, Value: "true", Desc: "Always on for dashboard"},
-		{Key: "MODEL_OUT_PATH", Label: "Model Output", Type: fieldString, Value: "", Desc: "Optional custom checkpoint path (empty = auto naming)"},
+		{Key: "DATASET_PATH", Label: "Dataset Path", Type: fieldString, Value: "datasets/raw/databricks-dolly-15k.jsonl", Desc: "Which data file the model learns from"},
+		{Key: "TOKENIZER", Label: "Tokenizer", Type: fieldChoice, Value: "bpe", Desc: "How text is split before training", Choices: []string{"bpe", "char"}},
+		{Key: "BPE_ENCODING", Label: "BPE Encoding", Type: fieldString, Value: "cl100k_base", Desc: "Dictionary used by BPE tokenizer"},
+		{Key: "TOKEN_VOCAB_SIZE", Label: "Local Token Vocab", Type: fieldInt, Value: "2048", Desc: "How many token pieces to keep"},
+		{Key: "N_LAYER", Label: "Layers", Type: fieldInt, Value: "1", Desc: "Model depth (more layers = smarter/slower)"},
+		{Key: "N_EMBD", Label: "Embedding Size", Type: fieldInt, Value: "48", Desc: "Model width (more width = capacity/slower)"},
+		{Key: "N_HEAD", Label: "Attention Heads", Type: fieldInt, Value: "4", Desc: "How many attention groups the model uses"},
+		{Key: "BLOCK_SIZE", Label: "Block Size", Type: fieldInt, Value: "96", Desc: "How much text context the model can see at once"},
+		{Key: "NUM_STEPS", Label: "Training Steps", Type: fieldInt, Value: "800", Desc: "How long to train"},
+		{Key: "LEARNING_RATE", Label: "Learning Rate", Type: fieldFloat, Value: "0.004", Desc: "How aggressively weights are updated"},
+		{Key: "BETA1", Label: "Adam Beta1", Type: fieldFloat, Value: "0.85", Desc: "Adam momentum smoothness"},
+		{Key: "BETA2", Label: "Adam Beta2", Type: fieldFloat, Value: "0.99", Desc: "Adam variance smoothness"},
+		{Key: "EPS_ADAM", Label: "Adam Epsilon", Type: fieldFloat, Value: "1e-8", Desc: "Tiny stability value for Adam"},
+		{Key: "VAL_SPLIT", Label: "Validation Split", Type: fieldFloat, Value: "0.10", Desc: "How much data is held out for quality checks"},
+		{Key: "EVAL_INTERVAL", Label: "Eval Interval", Type: fieldInt, Value: "50", Desc: "How often to run validation"},
+		{Key: "EVAL_STEPS", Label: "Eval Docs", Type: fieldInt, Value: "16", Desc: "How many validation docs to sample each check"},
+		{Key: "EARLY_STOP_PATIENCE", Label: "Early Stop Patience", Type: fieldInt, Value: "8", Desc: "How many non-improving evals before auto-stop"},
+		{Key: "EARLY_STOP_MIN_DELTA", Label: "Early Stop Min Delta", Type: fieldFloat, Value: "0.0005", Desc: "Smallest val-loss drop counted as real progress"},
+		{Key: "TEMPERATURE", Label: "Sample Temperature", Type: fieldFloat, Value: "0.60", Desc: "Response creativity vs stability"},
+		{Key: "SAMPLE_COUNT", Label: "Sample Count", Type: fieldInt, Value: "8", Desc: "How many preview outputs to generate"},
+		{Key: "SAMPLE_MAX_NEW_TOKENS", Label: "Sample Max New Tokens", Type: fieldInt, Value: "160", Desc: "Max response length per preview"},
+		{Key: "TOP_K", Label: "Top-K", Type: fieldInt, Value: "40", Desc: "Limit token choices to top K"},
+		{Key: "TOP_P", Label: "Top-P", Type: fieldFloat, Value: "0.90", Desc: "Keep only high-probability token mass"},
+		{Key: "REPETITION_PENALTY", Label: "Repetition Penalty", Type: fieldFloat, Value: "1.10", Desc: "Push model away from repeating itself"},
+		{Key: "MIN_NEW_TOKENS", Label: "Min New Tokens", Type: fieldInt, Value: "24", Desc: "Force minimum response length"},
+		{Key: "REPEAT_LAST_N", Label: "Repeat Window", Type: fieldInt, Value: "64", Desc: "How far back to check for repetition"},
+		{Key: "TRAIN_DEVICE", Label: "Train Device", Type: fieldChoice, Value: "cpu", Desc: "Requested hardware target", Choices: []string{"cpu", "gpu"}},
+		{Key: "METRIC_INTERVAL", Label: "Metric Interval", Type: fieldInt, Value: "1", Desc: "How often step metrics are logged"},
+		{Key: "LOG_LEVEL", Label: "Log Level", Type: fieldChoice, Value: "debug", Desc: "Log detail level", Choices: []string{"info", "debug"}},
+		{Key: "VERBOSE", Label: "Verbose Metrics", Type: fieldBool, Value: "true", Desc: "Show per-step metrics in logs/TUI"},
+		{Key: "MODEL_OUT_PATH", Label: "Model Output", Type: fieldString, Value: "", Desc: "Custom checkpoint path (blank = auto)"},
 	}
 }
 
 func defaultPresets() []preset {
 	return []preset{
 		{name: "fast", description: "quick smoke run", values: map[string]string{"TOKENIZER": "bpe", "TOKEN_VOCAB_SIZE": "1536", "N_LAYER": "1", "N_EMBD": "32", "N_HEAD": "4", "BLOCK_SIZE": "64", "NUM_STEPS": "400", "LEARNING_RATE": "0.0045", "TEMPERATURE": "0.6", "SAMPLE_COUNT": "4"}},
-		{name: "balanced", description: "laptop-safe baseline", values: map[string]string{"TOKENIZER": "bpe", "TOKEN_VOCAB_SIZE": "2048", "N_LAYER": "1", "N_EMBD": "48", "N_HEAD": "4", "BLOCK_SIZE": "96", "NUM_STEPS": "800", "LEARNING_RATE": "0.004", "TEMPERATURE": "0.6", "SAMPLE_COUNT": "8"}},
-		{name: "max", description: "stronger run", values: map[string]string{"TOKENIZER": "bpe", "TOKEN_VOCAB_SIZE": "3072", "N_LAYER": "2", "N_EMBD": "64", "N_HEAD": "4", "BLOCK_SIZE": "128", "NUM_STEPS": "1800", "LEARNING_RATE": "0.0038", "TEMPERATURE": "0.6", "SAMPLE_COUNT": "10"}},
+		{name: "coherent-fast", description: "cpu-feasible coherence boost", values: map[string]string{"TOKENIZER": "bpe", "TOKEN_VOCAB_SIZE": "3072", "N_LAYER": "2", "N_EMBD": "80", "N_HEAD": "4", "BLOCK_SIZE": "128", "NUM_STEPS": "1500", "LEARNING_RATE": "0.0025", "EVAL_INTERVAL": "100", "EVAL_STEPS": "64", "EARLY_STOP_PATIENCE": "12", "TEMPERATURE": "0.5", "SAMPLE_COUNT": "8"}},
+		{name: "coherent-max", description: "long cpu run for best coherence", values: map[string]string{"TOKENIZER": "bpe", "TOKEN_VOCAB_SIZE": "4096", "N_LAYER": "2", "N_EMBD": "96", "N_HEAD": "4", "BLOCK_SIZE": "128", "NUM_STEPS": "3000", "LEARNING_RATE": "0.0025", "EVAL_INTERVAL": "100", "EVAL_STEPS": "64", "EARLY_STOP_PATIENCE": "12", "TEMPERATURE": "0.45", "SAMPLE_COUNT": "10"}},
 	}
 }
 
@@ -423,8 +427,8 @@ func initialModel() model {
 		chatPromptInput:    prompt,
 		chatPathInput:      pathIn,
 		datasetPickerInput: dsPick,
-		chatTemp:           0.60,
-		chatMaxTokens:      220,
+		chatTemp:           0.35,
+		chatMaxTokens:      180,
 		help:               help.New(),
 		projectRoot:        root,
 		splashActive:       true,
@@ -445,8 +449,8 @@ func initialModel() model {
 			Cancel:   key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "cancel edit")),
 			Cycle:    key.NewBinding(key.WithKeys("space"), key.WithHelp("space", "cycle toggle")),
 			Preset1:  key.NewBinding(key.WithKeys("1"), key.WithHelp("1", "preset fast")),
-			Preset2:  key.NewBinding(key.WithKeys("2"), key.WithHelp("2", "preset balanced")),
-			Preset3:  key.NewBinding(key.WithKeys("3"), key.WithHelp("3", "preset max")),
+			Preset2:  key.NewBinding(key.WithKeys("2"), key.WithHelp("2", "preset coherent-fast")),
+			Preset3:  key.NewBinding(key.WithKeys("3"), key.WithHelp("3", "preset coherent-max")),
 			Refresh:  key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "refresh lists")),
 			ClearLog: key.NewBinding(key.WithKeys("c"), key.WithHelp("c", "clear logs/chat")),
 			Path:     key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "edit chat path")),
@@ -457,6 +461,9 @@ func initialModel() model {
 			TokUp:    key.NewBinding(key.WithKeys("="), key.WithHelp("=", "chat tokens +10")),
 			FilePick: key.NewBinding(key.WithKeys("f"), key.WithHelp("f", "dataset picker")),
 		},
+	}
+	if err := m.openChatLogs(); err != nil {
+		m.appendLog("[system] failed to open chat logs: " + err.Error())
 	}
 	m.addChatLine("[system] chat ready")
 	m.addChatLine("[system] checkpoint: " + m.chatPathInput.Value())
@@ -519,6 +526,11 @@ func callChatCmd(root, checkpointPath, prompt string, temperature float64, maxNe
 		cmd.Env = append(os.Environ(),
 			"CHAT_TEMPERATURE="+fmt.Sprintf("%.2f", temperature),
 			"CHAT_MAX_NEW_TOKENS="+strconv.Itoa(maxNew),
+			"CHAT_TOP_K=20",
+			"CHAT_TOP_P=0.92",
+			"CHAT_REPETITION_PENALTY=1.15",
+			"CHAT_MIN_NEW_TOKENS=20",
+			"CHAT_REPEAT_LAST_N=64",
 		)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
@@ -529,11 +541,64 @@ func callChatCmd(root, checkpointPath, prompt string, temperature float64, maxNe
 }
 
 func (m *model) addChatLine(line string) {
+	line = sanitizeLogLine(line)
+	if line == "" {
+		return
+	}
 	m.chatRawLines = append(m.chatRawLines, line)
 	if len(m.chatRawLines) > 2500 {
 		m.chatRawLines = m.chatRawLines[len(m.chatRawLines)-2500:]
 	}
+	m.appendChatLog(line)
 	m.rebuildChatView()
+}
+
+func (m *model) openChatLogs() error {
+	logRoot := filepath.Join(m.projectRoot, "logs")
+	chatDir := filepath.Join(logRoot, "chat")
+	if err := os.MkdirAll(chatDir, 0o755); err != nil {
+		return err
+	}
+	ts := time.Now().Format("20060102_150405")
+	m.chatLogPath = filepath.Join(chatDir, fmt.Sprintf("tui_chat_%s.log", ts))
+	m.chatLatest = filepath.Join(logRoot, "chat_latest.log")
+
+	lf, err := os.OpenFile(m.chatLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	lat, err := os.OpenFile(m.chatLatest, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		_ = lf.Close()
+		return err
+	}
+	m.chatLogFile = lf
+	m.chatLastFile = lat
+	header := fmt.Sprintf("[session] started_at=%s chat_log=%s\n", time.Now().Format(time.RFC3339), m.chatLogPath)
+	_, _ = m.chatLogFile.WriteString(header)
+	_, _ = m.chatLastFile.WriteString(header)
+	return nil
+}
+
+func (m *model) appendChatLog(line string) {
+	stamped := fmt.Sprintf("%s %s\n", time.Now().Format("2006-01-02T15:04:05"), line)
+	if m.chatLogFile != nil {
+		_, _ = m.chatLogFile.WriteString(stamped)
+	}
+	if m.chatLastFile != nil {
+		_, _ = m.chatLastFile.WriteString(stamped)
+	}
+}
+
+func (m *model) closeChatLogs() {
+	if m.chatLogFile != nil {
+		_ = m.chatLogFile.Close()
+		m.chatLogFile = nil
+	}
+	if m.chatLastFile != nil {
+		_ = m.chatLastFile.Close()
+		m.chatLastFile = nil
+	}
 }
 
 func (m *model) rebuildChatView() {
@@ -1257,6 +1322,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.stopTraining()
 				}
 				m.closeRunLogs()
+				m.closeChatLogs()
 				return m, tea.Quit
 			case "esc":
 				m.closeDatasetPicker()
@@ -1303,6 +1369,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.stopTraining()
 					}
 					m.closeRunLogs()
+					m.closeChatLogs()
 					return m, tea.Quit
 				case "enter":
 					m.chatEditingPath = false
@@ -1322,6 +1389,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.stopTraining()
 					}
 					m.closeRunLogs()
+					m.closeChatLogs()
 					return m, tea.Quit
 				case "enter":
 					if m.chatWaiting {
@@ -1363,6 +1431,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.stopTraining()
 			}
 			m.closeRunLogs()
+			m.closeChatLogs()
 			return m, tea.Quit
 		case "tab", "l":
 			if m.splashActive {
@@ -1820,7 +1889,7 @@ func (m model) viewTrainTab(w, h int) string {
 	cfg := m.panel("Config (All Variables)", lines, w)
 
 	desc := m.fields[m.fieldIdx]
-	detailLines := []string{"Selected: " + desc.Label, desc.Desc, "", "Presets: 1=fast 2=balanced 3=max", "Edit: e or enter | cycle: space (bool/choice)", "Run: s start | x stop"}
+	detailLines := []string{"Selected: " + desc.Label, desc.Desc, "", "Presets: 1=fast 2=coherent-fast 3=coherent-max", "Edit: e or enter | cycle: space (bool/choice)", "Run: s start | x stop"}
 	guidance := fieldGuidance(desc)
 	if w >= 72 {
 		detailLines = append(detailLines, "")
@@ -1966,24 +2035,24 @@ func fieldGuidance(f cfgField) []string {
 	case "TOKEN_VOCAB_SIZE":
 		return []string{
 			"",
-			"What this is: number of subword tokens kept in local vocab.",
-			"Why it matters: higher can improve wording, but increases RAM/time.",
-			"Safe start (laptop): 2048. Next step: 3072, then 4096.",
+			"What this is: how many word pieces the model can understand.",
+			"Why it matters: higher values usually improve wording, but cost more time.",
+			"Safe start: 3072 for better chat quality. Use 4096 for long runs.",
 		}
 	case "N_LAYER":
 		return []string{
 			"",
-			"What this is: number of transformer blocks (model depth).",
-			"Why it matters: more layers can improve quality, but slows training heavily.",
-			"Safe start: 1 on laptop, 2 if stable.",
+			"What this is: model depth.",
+			"Why it matters: 2 layers is much better for coherent responses than 1 layer.",
+			"Safe start: 2 for real training, 1 only for smoke tests.",
 		}
 	case "N_EMBD":
 		return []string{
 			"",
-			"What this is: embedding width (model capacity per token).",
-			"Why it matters: bigger is stronger but costs RAM/CPU.",
+			"What this is: model width (how much it can store per token).",
+			"Why it matters: bigger usually improves answer quality, but slows training.",
 			"Rule: must be divisible by N_HEAD.",
-			"Safe start: 48.",
+			"Safe start: 80. Use 96 for best quality on long runs.",
 		}
 	case "N_HEAD":
 		return []string{
@@ -1996,23 +2065,24 @@ func fieldGuidance(f cfgField) []string {
 	case "BLOCK_SIZE":
 		return []string{
 			"",
-			"What this is: max context length (how much text model sees at once).",
-			"Why it matters: higher gives more context but can explode compute cost.",
-			"Safe start: 96. Try 128 only if run time is acceptable.",
+			"What this is: how many tokens of context the model sees at once.",
+			"Why it matters: too small hurts instruction following; bigger costs more CPU.",
+			"Safe start: 128 for coherence-focused runs.",
 		}
 	case "NUM_STEPS":
 		return []string{
 			"",
-			"What this is: total optimizer updates.",
-			"Why it matters: more steps = longer training and possibly better fit.",
-			"Safe start: 800. Increase slowly after a successful run.",
+			"What this is: total training updates.",
+			"Why it matters: 800 can train, but chat may still be incoherent.",
+			"Validated assumption: quality improves with longer runs on this dataset.",
+			"Safe start: 1500. Strong run: 3000.",
 		}
 	case "LEARNING_RATE":
 		return []string{
 			"",
-			"What this is: step size for weight updates.",
-			"Why it matters: too high can destabilize, too low can be very slow.",
-			"Safe start: 0.004.",
+			"What this is: how big each learning step is.",
+			"Why it matters: high values can make training noisy; lower values are steadier.",
+			"Safe start: 0.0025 for coherence runs.",
 		}
 	case "BETA1", "BETA2":
 		return []string{
@@ -2031,9 +2101,9 @@ func fieldGuidance(f cfgField) []string {
 	case "TEMPERATURE":
 		return []string{
 			"",
-			"What this is: randomness for generated text.",
-			"Why it matters: lower = more predictable, higher = more creative/noisy.",
-			"Safe start: 0.60.",
+			"What this is: response creativity level.",
+			"Why it matters: lower values are more coherent and less random.",
+			"Safe start for this model: 0.30 to 0.40.",
 		}
 	case "SAMPLE_COUNT":
 		return []string{
@@ -2053,29 +2123,29 @@ func fieldGuidance(f cfgField) []string {
 		return []string{
 			"",
 			"What this is: keep only top-K next-token choices.",
-			"Why it matters: reduces wild/random outputs.",
-			"Safe start: 40. Set 0 to disable.",
+			"Why it matters: lower values reduce nonsense and punctuation spam.",
+			"Safe start for chat: 20. Set 0 to disable.",
 		}
 	case "TOP_P":
 		return []string{
 			"",
 			"What this is: nucleus sampling threshold.",
-			"Why it matters: lower values reduce randomness and increase consistency.",
-			"Safe start: 0.90.",
+			"Why it matters: controls how conservative token sampling is.",
+			"Safe start for chat: 0.92.",
 		}
 	case "REPETITION_PENALTY":
 		return []string{
 			"",
 			"What this is: penalty for repeating recent tokens.",
 			"Why it matters: helps reduce loops and repeated phrases.",
-			"Safe start: 1.10.",
+			"Safe start for chat: 1.15.",
 		}
 	case "MIN_NEW_TOKENS":
 		return []string{
 			"",
 			"What this is: minimum tokens before model is allowed to stop.",
 			"Why it matters: prevents ultra-short empty replies.",
-			"Safe start: 24.",
+			"Safe start for chat: 20.",
 		}
 	case "REPEAT_LAST_N":
 		return []string{
@@ -2096,21 +2166,21 @@ func fieldGuidance(f cfgField) []string {
 			"",
 			"What this is: how often validation runs during training.",
 			"Why it matters: frequent eval gives faster feedback but adds overhead.",
-			"Safe start: 50.",
+			"Safe start for longer runs: 100.",
 		}
 	case "EVAL_STEPS":
 		return []string{
 			"",
 			"What this is: how many validation docs are sampled per eval run.",
-			"Why it matters: larger sample is more accurate but slower.",
-			"Safe start: 16.",
+			"Why it matters: 16 is noisy; larger sample gives more trustworthy signal.",
+			"Safe start for tuning: 64.",
 		}
 	case "EARLY_STOP_PATIENCE":
 		return []string{
 			"",
 			"What this is: number of eval checks allowed without improvement.",
 			"Why it matters: automatically stops wasting time when model plateaus.",
-			"Safe start: 8.",
+			"Safe start for long runs: 12.",
 		}
 	case "EARLY_STOP_MIN_DELTA":
 		return []string{
