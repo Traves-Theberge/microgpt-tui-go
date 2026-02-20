@@ -370,7 +370,7 @@ func defaultFields(root string) []cfgField {
 func defaultPresets() []preset {
 	return []preset{
 		{name: "fast", description: "quick smoke run", values: map[string]string{"TOKENIZER": "bpe", "TOKEN_VOCAB_SIZE": "1536", "N_LAYER": "1", "N_EMBD": "32", "N_HEAD": "4", "BLOCK_SIZE": "64", "NUM_STEPS": "400", "LEARNING_RATE": "0.0045", "TEMPERATURE": "0.6", "SAMPLE_COUNT": "4"}},
-		{name: "coherent-fast", description: "cpu-feasible coherence boost", values: map[string]string{"TOKENIZER": "bpe", "TOKEN_VOCAB_SIZE": "3072", "N_LAYER": "2", "N_EMBD": "80", "N_HEAD": "4", "BLOCK_SIZE": "128", "NUM_STEPS": "1500", "LEARNING_RATE": "0.0025", "EVAL_INTERVAL": "100", "EVAL_STEPS": "64", "EARLY_STOP_PATIENCE": "12", "TEMPERATURE": "0.5", "SAMPLE_COUNT": "8"}},
+		{name: "coherent-fast", description: "iterative 4h coherence pass", values: map[string]string{"TOKENIZER": "bpe", "TOKEN_VOCAB_SIZE": "3072", "N_LAYER": "2", "N_EMBD": "64", "N_HEAD": "4", "BLOCK_SIZE": "128", "NUM_STEPS": "800", "LEARNING_RATE": "0.0018", "EVAL_INTERVAL": "100", "EVAL_STEPS": "32", "EARLY_STOP_PATIENCE": "8", "TEMPERATURE": "0.45", "TOP_K": "40", "TOP_P": "0.85", "REPETITION_PENALTY": "1.12", "MIN_NEW_TOKENS": "24", "SAMPLE_COUNT": "8"}},
 		{name: "coherent-max", description: "long cpu run for best coherence", values: map[string]string{"TOKENIZER": "bpe", "TOKEN_VOCAB_SIZE": "4096", "N_LAYER": "2", "N_EMBD": "96", "N_HEAD": "4", "BLOCK_SIZE": "128", "NUM_STEPS": "3000", "LEARNING_RATE": "0.0025", "EVAL_INTERVAL": "100", "EVAL_STEPS": "64", "EARLY_STOP_PATIENCE": "12", "TEMPERATURE": "0.45", "SAMPLE_COUNT": "10"}},
 	}
 }

@@ -5,7 +5,6 @@
 /chat-tui
 
 # Runtime artifacts
-/logs/
 /models/*.json
 !/models/.gitkeep
 
@@ -13,8 +12,18 @@
 /assistant_dataset_*.jsonl
 /archive/*.jsonl
 /datasets/generated/
-/datasets/raw/
 !/datasets/examples/
 !/datasets/examples/*.jsonl
-/logs/*.log
-/logs/*.csv
+/logs/*
+!/logs/.gitkeep
+!/logs/train/
+!/logs/train/.gitkeep
+!/logs/system/
+!/logs/system/.gitkeep
+!/logs/eval/
+!/logs/eval/.gitkeep
+!/logs/runs/
+!/logs/runs/.gitkeep
+/logs/**/*.log
+/logs/**/*.csv
+/logs/**/*.txt
